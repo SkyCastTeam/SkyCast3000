@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>SkyCast 3000 - Maintenance</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000066;
+            color: #FFFFFF;
+            font-family: 'Courier New', Courier, monospace, bold;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            height: 100vh;
+        }
+
+        .logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: auto;
+        }
+
+        .message {
+            position: fixed;
+            top: 40px;
+            left: 40px;
+            font-size: 36px;
+            line-height: 1.4;
+            white-space: pre-line;
+            text-shadow: none;
+        }
+
+        .message::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        img {
+            content: url('/Images/fallback.png');
+        }
+
+        .downtime-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            background: rgba(0, 0, 51, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        @media screen and (max-width: 768px) {
+            .header {
+                height: auto;
+                padding: 10px;
+            }
+
+            .downtime-message {
+                width: 90%;
+                max-width: 400px;
+            }
+
+            .logo {
+                width: 150px;
+            }
+
+            .message {
+                font-size: 80px;
+            }
+        }
+        audio {
+            display: none;
+        }
+    </style>
+</head>
+<body>    
+    <audio autoplay loop>
+        <source src="/Music/ALERT.mp3" type="audio/mpeg">
+    </audio>
+    <div class="header">
+    </div>
+    <div class="container">
+        <div class="message">
+            <strong>SKYCAST 3000 WEATHER SYSTEM
+            TECHNICAL DIFFICULTIES DETECTED
+            STANDBY FOR RESTORATION
+            <span id="errorReason">MANUALLY INITIATED</span></strong></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const error = params.get('error') || 'MANUALLY INITIATED';
+            document.getElementById('errorReason').textContent = decodeURIComponent(error);
+        });
+        console.log('Nice Try. Maybe next time.');
+    </script>
+</body>
+</html>

@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyCast 3000</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Weather Hewitt", monospace;
+            background: url('https://skycast2000.boredom.dev/Images/background.png') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            overflow: hidden;
+        }
+
+        .screen {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .section {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            background: linear-gradient(135deg, rgba(0, 0, 51, 0.8) 0%, rgba(0, 0, 102, 0.8) 100%);
+            z-index: 1;
+            display: none;
+        }
+
+        .section.active {
+            opacity: 1;
+            display: block;
+            z-index: 2;
+        }
+
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to right, #000066, #0000CC);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #FFFFFF;
+            z-index: 100;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .location-display {
+            font-size: 18px;
+            color: #FFFFFF;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .conditions-table {
+            margin-top: 80px;
+            width: 90%; /* Reduced from 100% */
+            max-width: 800px; /* Add maximum width */
+            padding: 20px;
+            margin-left: auto; /* Center the table */
+            margin-right: auto;
+        }
+
+        .condition-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 30px; /* Increased horizontal padding */
+            background: rgba(0, 0, 102, 0.5);
+            margin: 10px 0;
+            border-left: 4px solid #0066cc;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .temperature {
+            font-family: "Weather One", monospace;
+            font-size: 72px;
+            text-align: center;
+            margin: 100px 0 40px 0;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .forecast-grid {
+            margin-top: 80px;
+            display: grid;
+            grid-template-rows: repeat(4, auto);
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .forecast-row {
+            background: rgba(0, 0, 102, 0.5);
+            padding: 15px;
+            border-left: 4px solid #0066cc;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        .time {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 24px;
+            color: #FFFF00;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        #radarImage {
+            width: 100%;
+            height: calc(100% - 60px);
+            margin-top: 60px;
+            object-fit: contain;
+        }
+        .alerts-container {
+            position: fixed; /* Change to fixed to stay in view */
+            top: 80px; /* Position below header */
+            right: 20px;
+            width: 300px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            background: rgba(204, 0, 0, 0.9);
+            display: none;
+            z-index: 1000;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .alert {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .alert:last-child {
+            border-bottom: none;
+        }
+
+        .alert-title {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #FFFF00;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .alert-description {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .location-prompt {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 51, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+            display: none;
+            border: 2px solid #FFFFFF;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            min-width: 300px;
+        }
+
+        .location-prompt h2 {
+            color: #FFFFFF;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .location-prompt button {
+            background: rgba(0, 0, 102, 0.6);
+            color: white;
+            border: 2px solid #FFFFFF;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+
+        .location-prompt button:hover {
+            background: rgba(35, 35, 240, 0.8);
+        }
+
+        .location-prompt input {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: 2px solid #FFFFFF;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            width: 200px;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 10px;
+            }
+
+            .header-title {
+                font-size: 18px;
+            }
+
+            .temperature {
+                font-size: 48px;
+            }
+
+            .condition-row {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .time {
+                font-size: 18px;
+            }
+        }
+        @font-face {
+    font-family: 'Weather Hewitt';
+    src: url('fonts/WeatherHewitt.woff2') format('woff2'),
+         url('fonts/WeatherHewitt.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Weather One';
+    src: url('fonts/WeatherOne.woff2') format('woff2'),
+         url('fonts/WeatherOne.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+.section {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: linear-gradient(135deg, rgba(0, 0, 51, 0.8) 0%, rgba(0, 0, 102, 0.8) 100%);
+    z-index: 1;
+    visibility: hidden;
+}
+
+.section.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 2;
+}
+.logo {
+    position: fixed;
+    bottom: 10px;
+    left: 20px;
+    z-index: 1000;
+}
+
+.logo img {
+    height: 100px;
+    width: auto;
+    filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
+}
+/* Add these styles */
+#alertsSection {
+    background: linear-gradient(135deg, rgba(139, 0, 0, 0.8) 0%, rgba(204, 0, 0, 0.8) 100%);
+}
+
+.alerts-scroll-container {
+    margin-top: 80px;
+    height: calc(100vh - 160px);
+    overflow: hidden;
+    position: relative;
+}
+
+.alerts-content {
+    padding: 20px;
+    transition: transform 0.03s linear;
+}
+
+.alert-scroll-item {
+    background: rgba(255, 255, 255, 0.1);
+    margin: 15px;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #FFD700;
+    opacity: 0;
+    animation: fadeIn 0.5s forwards;
+}
+
+.alert-scroll-title {
+    font-size: 24px;
+    color: #FFD700;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.alert-scroll-details {
+    font-size: 18px;
+    line-height: 1.4;
+    color: white;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Add severity-based styling */
+.alert-scroll-item.extreme { background: rgba(139, 0, 0, 0.8); }
+.alert-scroll-item.severe { background: rgba(255, 0, 0, 0.7); }
+.alert-scroll-item.moderate { background: rgba(255, 140, 0, 0.7); }
+.alert-scroll-item.minor { background: rgba(255, 255, 0, 0.6); }
+
+.severity-badge {
+    float: right;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.alert-timing {
+    font-size: 14px;
+    margin-top: 8px;
+    color: rgba(255, 255, 255, 0.8);
+}
+    </style>
+</head>
+<body>
+    <div class="screen">
+        <section id="currentConditions" class="section active">
+            <div class="header">
+                <div class="header-title">Your Current Conditions</div>
+            
+                <div class="location-display">Loading...</div>
+            </div>
+            <div class="temperature" id="temperature">--°F</div>
+            <div class="conditions-table">
+                <div class="condition-row">
+                    <span>Humidity</span>
+                    <span id="humidity">--%</span>
+                </div>
+                <div class="condition-row">
+                    <span>Pressure</span>
+                    <span id="pressure">--.-- inHg</span>
+                </div>
+                <div class="condition-row">
+                    <span>Wind</span>
+                    <span id="wind">-- MPH</span>
+                </div>
+                <div class="condition-row">
+                    <span>Conditions</span>
+                    <span id="conditions">--</span>
+                </div>
+            </div>
+            <div class="time" id="currentTime"></div>
+        </section>
+
+        <section id="forecast" class="section">
+            <div class="header">
+                <div class="header-title">Coming To You This Week:</div>
+                <div class="location-display">Loading...</div>
+            </div>
+            <div class="forecast-grid" id="forecastGrid"></div>
+            <div class="time" id="forecastTime"></div>
+        </section>
+
+        <section id="radarSection" class="section">
+            <div class="header">
+                <div class="header-title">And Now... Your Local Radar.</div>
+                <div class="location-display">Loading...</div>
+            </div>
+            <img id="radarImage" alt="Radar">
+            <div class="time" id="radarTime"></div>
+        </section>
+                <!-- Add this after the radar section -->
+        <section id="alertsSection" class="section">
+            <div class="header">
+                <div class="header-title">Your Current Weather Alerts:</div>
+                <div class="location-display">Loading...</div>
+            </div>
+            <div class="alerts-scroll-container">
+                <div class="alerts-content" id="alertsContent"></div>
+            </div>
+            <div class="time" id="alertsTime"></div>
+        </section>
+    </div>
+    <div class="logo">
+        <img src="Images/Logo/modern-logo-center.png" alt="SkyCast Logo">
+    </div>
+    <div id="alertsContainer" class="alerts-container"></div>
+
+    <div class="location-prompt" id="locationPrompt">
+        <h2>Weather Location</h2>
+        <button onclick="requestLocation()">Use My Location</button>
+        <div>
+            <input type="text" id="locationInput" placeholder="Or enter ZIP code" maxlength="5">
+            <button onclick="submitLocation()">Submit</button>
+        </div>
+    </div>
+
+    <audio id="bgMusic"></audio>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            API: {
+                headers: {
+                    'User-Agent': '(SkyCast 3000, skycast@weather.local)',
+                    'Accept': 'application/geo+json'
+                }
+            },
+            UPDATE_INTERVAL: 300000 // 5 minutes
+        };
+
+        // Global state
+        let currentLocation = {
+            lat: null,
+            lon: null,
+            city: null,
+            state: null,
+            officeId: null
+        };
+
+        let currentTrack = Math.floor(Math.random() * 30) + 1;
+        const totalTracks = 30;
+
+        // Weather Station Manager
+        class WeatherStationManager {
+            static RADAR_STATIONS = {
+                'BMX': 'KBMX', 'MOB': 'KMOB', 'HUN': 'KHTX',
+                'PSR': 'KIWA', 'TWC': 'KEMX', 'FGZ': 'KFSX',
+                'LZK': 'KLZK', 'FSM': 'KSRX',
+                'SGX': 'KNKX', 'LOX': 'KVTX', 'MTR': 'KMUX',
+                'BOU': 'KFTG', 'PUB': 'KPUX', 'GJT': 'KGJX',
+                'TBW': 'KTBW', 'MLB': 'KMLB', 'JAX': 'KJAX',
+                'FFC': 'KFFC', 'VAD': 'KVAX', 'CHS': 'KCLX',
+                'HFO': 'PHKI', 'PHO': 'PHMO',
+                'BOI': 'KCBX', 'PIH': 'KSFX',
+                'LOT': 'KLOT', 'ILX': 'KILX',
+                'IND': 'KIND', 'IWX': 'KIWX',
+                'DMX': 'KDMX', 'DVN': 'KDVN',
+                'TOP': 'KTWX', 'ICT': 'KICT',
+                'LIX': 'KLIX', 'SHV': 'KSHV',
+                'BOX': 'KBOX', 'GYX': 'KGYX',
+                'DTX': 'KDTX', 'GRR': 'KGRR',
+                'MPX': 'KMPX', 'DLH': 'KDLH',
+                'JAN': 'KDGX', 'MEG': 'KNQA',
+                'LSX': 'KLSX', 'EAX': 'KEAX',
+                'OAX': 'KOAX', 'LBF': 'KLNX',
+                'VEF': 'KESX', 'REV': 'KRGX',
+                'ABQ': 'KABX', 'EPZ': 'KEPZ',
+                'OKX': 'KOKX', 'ALY': 'KENX',
+                'RAH': 'KRAX', 'GSP': 'KGSP',
+                'BIS': 'KBIS', 'FGF': 'KMVX',
+                'CLE': 'KCLE', 'ILN': 'KILN',
+                'OUN': 'KTLX', 'TSA': 'KINX',
+                'PQR': 'KRTX', 'MFR': 'KMAX',
+                'PBZ': 'KPBZ', 'PHI': 'KDIX',
+                'CAE': 'KCAE', 'CHS': 'KCLX',
+                'FSD': 'KFSD', 'UNR': 'KUDX',
+                'MRX': 'KMRX', 'OHX': 'KOHX',
+                'FWD': 'KFWS', 'HGX': 'KHGX',
+                'SLC': 'KMTX', 'ICC': 'KICX',
+                'BTV': 'KCXX',
+                'SEW': 'KATX', 'OTX': 'KOTX',
+                'MKX': 'KMKX', 'GRB': 'KGRB',
+                'CYS': 'KCYS', 'RIW': 'KRIW'
+            };
+
+            static getRadarStation(officeId) {
+                return this.RADAR_STATIONS[officeId] || 'CONUS';
+            }
+        }
+
+     // Then update the DisplayManager class:
+     class DisplayManager {
+    constructor() {
+        this.sections = ['currentConditions', 'forecast', 'radarSection', 'alertsSection'];
+        this.currentIndex = 0;
+        this.rotationInterval = 8000;
+        this.scrollInterval = null;
+    }
+
+    start() {
+        this.showSection(this.currentIndex);
+        setInterval(() => this.rotate(), this.rotationInterval);
+        this.updateTime();
+        setInterval(() => this.updateTime(), 1000);
+    }
+
+    showSection(index) {
+        this.sections.forEach(id => {
+            const section = document.getElementById(id);
+            if (section) {
+                section.classList.remove('active');
+            }
+        });
+
+        const nextSection = document.getElementById(this.sections[index]);
+        if (nextSection) {
+            nextSection.classList.add('active');
+            if (this.sections[index] === 'alertsSection') {
+                setTimeout(() => this.startAlertScroll(), 100);
+            }
+        }
+    }
+
+    rotate() {
+        this.currentIndex = (this.currentIndex + 1) % this.sections.length;
+        this.showSection(this.currentIndex);
+    }
+
+    updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
+        ['currentTime', 'forecastTime', 'radarTime', 'alertsTime'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = timeString;
+            }
+        });
+    }
+
+    startAlertScroll() {
+        const container = document.querySelector('.alerts-scroll-container');
+        const content = document.querySelector('.alerts-content');
+        
+        if (!container || !content) return;
+        
+        content.style.transform = 'translateY(0)';
+        clearInterval(this.scrollInterval);
+        
+        const maxScroll = content.offsetHeight - container.offsetHeight;
+        if (maxScroll <= 0) return;
+        
+        let scrollAmount = 0;
+        const step = 1;
+        
+        this.scrollInterval = setInterval(() => {
+            if (scrollAmount >= maxScroll) {
+                clearInterval(this.scrollInterval);
+                setTimeout(() => this.rotate(), 2000);
+                return;
+            }
+            scrollAmount += step;
+            content.style.transform = `translateY(-${scrollAmount}px)`;
+        }, 20);
+    }
+} // End DisplayManager
+
+        class LocationService {
+            static async getFromCoordinates(lat, lon) {
+    try {
+        const response = await fetch(
+            `https://api.weather.gov/points/${lat},${lon}`,
+            { headers: CONFIG.API.headers }
+        );
+        if (!response.ok) {
+            throw new Error('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x121496'); // LSNF
+        }
+        return response.json();
+    } catch (error) {
+        ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x121496'); // LSNF
+    }
+}
+
+            static async getFromZipCode(zipCode) {
+            try {
+                const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+                if (!response.ok) {
+                        ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x261996'); // ZSIF
+                    }
+                    return response.json();
+                } catch (error) {
+                    ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x261996'); // ZSIF
+                }
+            }
+        }
+        // Weather Service
+        class WeatherService {
+    constructor() {
+        this.location = {
+            lat: null,
+            lon: null,
+            city: null,
+            state: null,
+            officeId: null
+        };
+        this.refreshInterval = CONFIG.UPDATE_INTERVAL;
+
+        // Add DevTools detection
+        let devToolsOpen = false;
+
+        // Check and trigger error if DevTools detected
+        if (devToolsOpen) {
+            ErrorHandler.handleFatalError('INTRUDER DETECTED! FLUSHING INTERIOR! STAY AWAY FROM MY SOURCE!'); // "INT" for Intrusion
+        }
+    }
+
+    async initialize() {
+        try {
+            if (navigator.geolocation) {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject);
+                });
+                await this.setLocation(position.coords.latitude, position.coords.longitude);
+            } else {
+                ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x121533');
+            }
+        } catch (error) {
+            ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x121533');
+        }
+    }
+
+    showLocationPrompt() {
+        document.getElementById('locationPrompt').style.display = 'block';
+    }
+
+    async setLocation(lat, lon) {
+        try {
+            const locationData = await LocationService.getFromCoordinates(lat, lon);
+            if (!locationData || !locationData.properties) {
+                throw new Error('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x121496');
+            }
+            const properties = locationData.properties;
+            
+            this.location = {
+                lat: lat,
+                lon: lon,
+                city: properties.relativeLocation.properties.city,
+                state: properties.relativeLocation.properties.state,
+                officeId: properties.gridId
+            };
+
+            document.querySelectorAll('.location-display').forEach(el => {
+                el.textContent = `${this.location.city}, ${this.location.state}`;
+            });
+
+            await this.fetchWeatherData(properties);
+            await this.fetchAlerts();
+            this.updateRadar();
+        } catch (error) {
+            ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x121496');
+        }
+    }
+
+    async fetchWeatherData(properties) {
+        try {
+            const observationResponse = await fetch(properties.observationStations, {
+                headers: CONFIG.API.headers
+            });
+            const observationData = await observationResponse.json();
+            const latestStation = observationData.features[0].id;
+            
+            const currentResponse = await fetch(`${latestStation}/observations/latest`, {
+                headers: CONFIG.API.headers
+            });
+            const currentData = await currentResponse.json();
+            this.updateCurrentConditions(currentData);
+
+            const forecastResponse = await fetch(properties.forecast, {
+                headers: CONFIG.API.headers
+            });
+            const forecastData = await forecastResponse.json();
+            this.updateForecast(forecastData);
+        } catch (error) {
+            ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x231914');
+        }
+    }
+
+    async fetchAlerts() {
+    try {
+        // Get proper zone code first
+        const zoneResponse = await fetch(
+            `https://api.weather.gov/zones/forecast?point=${this.location.lat},${this.location.lon}`,
+            { headers: CONFIG.API.headers }
+        );
+        
+        if (!zoneResponse.ok) throw new Error('Failed to fetch zone information');
+        const zoneData = await zoneResponse.json();
+        
+        if (!zoneData.features || !zoneData.features.length) {
+            throw new Error('No zone data found');
+        }
+
+        const zoneId = zoneData.features[0].properties.id;
+        
+        // Now fetch alerts with proper zone ID
+        const alertResponse = await fetch(
+            `https://api.weather.gov/alerts/active/zone/${zoneId}`,
+            { headers: CONFIG.API.headers }
+        );
+        
+        if (!alertResponse.ok) throw new Error('Failed to fetch alerts');
+        const data = await alertResponse.json();
+        
+        this.updateAlerts(data.features || []);
+    } catch (error) {
+        console.error('Alert fetch failed:', error);
+    }
+}
+
+    updateCurrentConditions(data) {
+        const properties = data.properties;
+        document.getElementById('temperature').textContent = 
+            `${Math.round(properties.temperature.value * 9/5 + 32)}°F`;
+        document.getElementById('humidity').textContent = 
+            `${Math.round(properties.relativeHumidity.value)}%`;
+        document.getElementById('pressure').textContent = 
+            `${(properties.barometricPressure.value * 0.0295301).toFixed(2)} inHg`;
+        document.getElementById('wind').textContent = 
+            `${Math.round(properties.windSpeed.value * 2.237)} MPH`;
+        document.getElementById('conditions').textContent = 
+            properties.textDescription;
+    }
+
+    updateForecast(data) {
+        const forecastGrid = document.getElementById('forecastGrid');
+        forecastGrid.innerHTML = data.properties.periods
+            .slice(0, 7)
+            .map(period => `
+                <div class="forecast-row">
+                    <strong>${period.name}:</strong> ${period.shortForecast}, 
+                    ${period.temperature}°${period.temperatureUnit}
+                </div>
+            `).join('');
+    }
+
+    updateAlerts(alerts) {
+        const alertsContent = document.getElementById('alertsContent');
+        if (!alerts || alerts.length === 0) {
+            alertsContent.innerHTML = '<div class="alert-scroll-item">No active alerts</div>';
+            return;
+        }
+
+        alertsContent.innerHTML = alerts.map(alert => {
+            const props = alert.properties;
+            const severity = props.severity.toLowerCase();
+            const start = new Date(props.effective).toLocaleString();
+            const end = new Date(props.expires).toLocaleString();
+            
+            return `
+                <div class="alert-scroll-item ${severity}">
+                    <span class="severity-badge">${props.severity}</span>
+                    <div class="alert-scroll-title">${props.event}</div>
+                    <div class="alert-scroll-details">${props.headline}</div>
+                    <div class="alert-timing">
+                        Effective: ${start}<br>
+                        Expires: ${end}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+        
+    updateRadar() {
+        const station = WeatherStationManager.getRadarStation(this.location.officeId);
+        const radarImage = document.getElementById('radarImage');
+        radarImage.src = `https://radar.weather.gov/ridge/standard/${station}_loop.gif`;
+    }
+
+    async requestLocation() {
+        try {
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
+            await this.setLocation(position.coords.latitude, position.coords.longitude);
+            document.getElementById('locationPrompt').style.display = 'none';
+        } catch (error) {
+            ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x121532');
+        }
+    }
+}
+        // Add error handling utility
+        class ErrorHandler {
+    static handleFatalError(error) {
+        // Define common error prefixes
+        const ERROR_CODES = {
+            'MSIF': '131996', // Music System Initialization Failed
+            'MLEF': '131256', // Music Loading Error Failed
+            'MPEF': '131656', // Music Playback Error Failed
+            'LSNF': '121496', // Location Service Not Found
+            'WSNR': '231914', // Weather Service No Response
+            'ZSIF': '261996'  // Zip Service Initialization Failed
+        };
+
+        console.error('Fatal error occurred:', error);
+        let errorMessage;
+        
+        // Map common errors to codes
+        if (error.includes('music')) {
+            errorMessage = `SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x${ERROR_CODES['MSIF']}`;
+        } else if (error.includes('location')) {
+            errorMessage = `SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x${ERROR_CODES['LSNF']}`;
+        } else if (error.includes('weather')) {
+            errorMessage = `SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x${ERROR_CODES['WSNR']}`;
+        } else if (error.includes('ZIP')) {
+            errorMessage = `SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x${ERROR_CODES['ZSIF']}`;
+        } else {
+            // Generic system error
+            errorMessage = error;
+        }
+
+        window.location.href = `/downtime.html?error=${encodeURIComponent(errorMessage)}`;
+    }
+}
+
+        // Add music functions
+        function loadRandomTrack() {
+    try {
+        const audio = document.getElementById('bgMusic');
+        
+        // Make sure audio element exists
+        if (!audio) {
+            throw new Error('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x131996'); // MSIF
+        }
+
+        // Generate padded track number
+        currentTrack = Math.floor(Math.random() * totalTracks) + 1;
+        const trackNum = currentTrack.toString().padStart(2, '0');
+        
+        // Set up load event before changing source
+        audio.addEventListener('loadeddata', () => {
+            audio.play().catch(err => {
+                console.error('Audio playback failed:', err);
+                ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x131656'); // MPEF
+            });
+        }, { once: true });
+
+        // Set source and attributes
+        audio.src = `Music/${trackNum}.mp3`;
+        audio.loop = false;
+        
+    } catch (error) {
+        console.error('Track loading error:', error);
+        ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x131996'); // MSIF
+    }
+}
+
+        function skipTrack() {
+            loadRandomTrack();
+        }
+
+       // Initialize Application
+    document.addEventListener('DOMContentLoaded', () => {
+    const displayManager = new DisplayManager();
+    displayManager.start();
+    // Add to constructor or initialization code
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+            ErrorHandler.handleFatalError('INTRUDER DETECTED! FLUSHING INTERIOR! STAY AWAY FROM MY SOURCE!');
+        }
+    });
+
+    const weatherService = new WeatherService();
+    weatherService.initialize();
+
+    // Show location prompt initially
+    weatherService.showLocationPrompt();
+
+    // Global handlers
+    window.requestLocation = async () => {
+        try {
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+            });
+            await weatherService.setLocation(position.coords.latitude, position.coords.longitude);
+            document.getElementById('locationPrompt').style.display = 'none';
+            // Start music after location set
+            loadRandomTrack();
+        } catch (error) {
+            console.error('Location request failed:', error);
+            ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x121532');
+        }
+    };
+
+    window.submitLocation = async () => {
+        const zipCode = document.getElementById('locationInput').value;
+        if (!/^\d{5}$/.test(zipCode)) {
+            alert('Please enter a valid 5-digit ZIP code');
+            return;
+        }
+
+        try {
+            const data = await LocationService.getFromZipCode(zipCode);
+            await weatherService.setLocation(
+                data.places[0].latitude,
+                data.places[0].longitude
+            );
+            document.getElementById('locationPrompt').style.display = 'none';
+            // Start music after location set
+            loadRandomTrack();
+        } catch (error) {
+            console.error('ZIP code lookup failed:', error);
+            ErrorHandler.handleFatalError('SYSTEM OPERATOR, REFER TO MANUAL. ERROR CODE 0x121531');
+        }
+    };
+
+    // Set up music end handler
+    const audio = document.getElementById('bgMusic');
+    audio.addEventListener('ended', () => {
+        loadRandomTrack();
+    });
+});        
+    </script>
+</body>
+</html>
